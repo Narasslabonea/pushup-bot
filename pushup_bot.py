@@ -1,3 +1,21 @@
+import threading
+from http.server import BaseHTTPRequestHandler, HTTPServer
+import os
+
+class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        self.send_response(200)
+        self.end_headers()
+        self.wfile.write(b"Bot is running!")
+
+def run_port_listener():
+    port = int(os.environ.get("PORT", 8000))
+    server = HTTPServer(('0.0.0.0', port), SimpleHTTPRequestHandler)
+    server.serve_forever()
+
+# Запускаем "обманщик портов" в фоновом потоке
+threading.Thread(target=run_port_listener, daemon=True).start()
+
 import json
 import os
 from datetime import datetime, date
