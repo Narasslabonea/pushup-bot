@@ -15,7 +15,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 # ─────────────────────────────────────────────
 # НАСТРОЙКИ — замени на свои
 # ─────────────────────────────────────────────
-TOKEN = "8862704513:AAGBmXzbc82tYIv_2_z7bA3FktYIv9xDYlQ"
+TOKEN = "8862704513:AAH7U6K2sBE5fq3I2702--XHnz4JWiO9B4I"
 GROUP_CHAT_ID = -5365467144 # ID вашей группы (отрицательное число)
 
 # Дата старта отсчёта (день 15 = завтра)
