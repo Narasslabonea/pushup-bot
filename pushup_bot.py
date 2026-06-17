@@ -1,21 +1,3 @@
-import threading
-from http.server import BaseHTTPRequestHandler, HTTPServer
-import os
-
-class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
-    def do_GET(self):
-        self.send_response(200)
-        self.end_headers()
-        self.wfile.write(b"Bot is running!")
-
-def run_port_listener():
-    port = int(os.environ.get("PORT", 8000))
-    server = HTTPServer(('0.0.0.0', port), SimpleHTTPRequestHandler)
-    server.serve_forever()
-
-# Запускаем "обманщик портов" в фоновом потоке
-threading.Thread(target=run_port_listener, daemon=True).start()
-
 import json
 import os
 from datetime import datetime, date
@@ -195,20 +177,36 @@ async def send_daily_summary(app):
     )
 
 
-# ─────────────────────────────────────────────
-# ЗАПУСК
-# ─────────────────────────────────────────────
+# ==========================================
+# ЗАПУСК (Полностью замените всё до конца файла)
+# ==========================================
+
+from flask import Flask
+from threading import Thread
+import os
+
+# Создаем веб-сервер для обмана Render.com
+flask_app = Flask('')
+
+@flask_app.route('/')
+def home():
+    return "Бот работает 24/7!"
+
+def run_web_server():
+    port = int(os.environ.get("PORT", 8080))
+    flask_app.run(host='0.0.0.0', port=port)
+
 
 def main():
     app = ApplicationBuilder().token(TOKEN).build()
-
+    
     app.add_handler(CommandHandler("start", cmd_start))
     app.add_handler(CommandHandler("register", cmd_register))
     app.add_handler(CommandHandler("status", cmd_status))
     app.add_handler(CommandHandler("day", cmd_day))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_plus))
-
-    # Планировщик — итог в 23:00 каждый день
+    
+    # Планировщик - итог в 23:00 каждый день
     scheduler = AsyncIOScheduler(timezone="Europe/Kiev")
     scheduler.add_job(
         send_daily_summary,
@@ -218,7 +216,11 @@ def main():
         args=[app],
     )
     scheduler.start()
-
+    
+    # Запускаем веб-сервер в фоне
+    Thread(target=run_web_server, daemon=True).start()
+    print("Фоновый веб-сервер пинга запущен.")
+    
     print("🤖 Бот запущен!")
     app.run_polling()
 
@@ -226,25 +228,21 @@ def main():
 import asyncio
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
-# Умный перехватчик: обманываем планировщик только на момент его запуска
+# Умный перехватчик для планировщика в Python 3.10+
 orig_start = AsyncIOScheduler.start
-
 def patched_start(self, *args, **kwargs):
     orig_get = asyncio.get_running_loop
     asyncio.get_running_loop = lambda: asyncio.get_event_loop()
     try:
         return orig_start(self, *args, **kwargs)
     finally:
-        asyncio.get_running_loop = orig_get  # Сразу возвращаем всё на место
+        asyncio.get_running_loop = orig_get
 
 AsyncIOScheduler.start = patched_start
 
 if __name__ == "__main__":
-    # Создаем стабильное окружение для Python 3.10
+    # Создаем стабильное окружение для асинхронности
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
     
     main()
-
-
-
