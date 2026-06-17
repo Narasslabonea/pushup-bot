@@ -15,7 +15,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 # ─────────────────────────────────────────────
 # НАСТРОЙКИ — замени на свои
 # ─────────────────────────────────────────────
-TOKEN = "8862704513:AAH7U6K2sBE5fq3I2702--XHnz4JWiO9B4I"
+TOKEN = os.getenv("8862704513:AAH7U6K2sBE5fq3I2702--XHnz4JWiO9B4I")
 GROUP_CHAT_ID = -5365467144 # ID вашей группы (отрицательное число)
 
 # Дата старта отсчёта (день 15 = завтра)
@@ -217,32 +217,19 @@ def main():
     )
     scheduler.start()
     
-    # Запускаем веб-сервер в фоне
+    # Запуск веб-сервера активности
     Thread(target=run_web_server, daemon=True).start()
     print("Фоновый веб-сервер пинга запущен.")
-    
-    print("🤖 Бот запущен!")
-    app.run_polling()
 
-
-import asyncio
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
-
-# Умный перехватчик для планировщика в Python 3.10+
-orig_start = AsyncIOScheduler.start
-def patched_start(self, *args, **kwargs):
-    orig_get = asyncio.get_running_loop
-    asyncio.get_running_loop = lambda: asyncio.get_event_loop()
-    try:
-        return orig_start(self, *args, **kwargs)
-    finally:
-        asyncio.get_running_loop = orig_get
-
-AsyncIOScheduler.start = patched_start
+    # Безопасный запуск опроса Telegram
+    async with app:
+        await app.initialize()
+        await app.start()
+        await app.updater.start_polling(drop_pending_updates=True)
+        print("Бот успешно запущен!")
+        while True:
+            await asyncio.sleep(3600)
 
 if __name__ == "__main__":
-    # Создаем стабильное окружение для асинхронности
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    
-    main()
+    import asyncio
+    asyncio.run(main())
